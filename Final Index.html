@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fall Creek Fishing Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+/*      background: #e0f7fa;*/
+    }
+    #map {
+      height: 90vh;
+      width: 100%;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fall Creek Fishing Guide</h1>
+  <p>Click on the map to log a fishing spot 🎣</p>
+  <div id="map"></div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZ2F2aW50eWNlciIsImEiOiJjbTkxdWRoN20wNTc0MnJwdjk2d2RoMjlpIn0.VgcV-NtMeZ5rs0fl12fGtA';
+
+    const bounds = [
+      [-122.782194, 43.893083], // SW
+      [-122.626778, 43.982917]  // NE
+    ];
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/satellite-v9',
+      center: [-122.7162, 43.9416],
+      zoom: 11,
+      scrollZoom: { around: 'pointer' },
+      pitchWithRotate: false,
+      dragRotate: false,
+//      maxBounds: bounds
+    });
+
+    map.addControl(new mapboxgl.NavigationControl());
+
+    map.on('load', () => {
+      map.fitBounds(bounds, { padding: 20, maxZoom: 14 });
+
+      // ✅ Add source for boat ramps
+      map.addSource('boat-ramps', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [-122.747278, 43.940389]
+              },
+              properties: {
+                title: 'Winberry State Recreation Site'
+              }
+            },
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [-122.754556, 43.956639]
+              },
+              properties: {
+                title: 'Big Fall Creek Road'
+              }
+            },
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [-122.668806, 43.970944]
+              },
+              properties: {
+                title: 'Fall Creek State Recreation Area'
+              }
+            }
+          ]
+        }
+      });
+
+      // ✅ Add layer with built-in icon
+     map.loadImage('Boat Ramp Icon.png', (error, image) => {
+  if (error) throw error;
+
+  map.addImage('boat-ramp-icon', image); // internal name for Mapbox
+
+  map.addLayer({
+    id: 'boat-ramps-layer',
+    type: 'symbol',
+    source: 'boat-ramps',
+    layout: {
+      'icon-image': 'boat-ramp-icon', // reference to the image above
+      'icon-size': 0.8,              // tweak size based on how it looks
+      'icon-allow-overlap': true
+    }
+  });
+});
+
+      // ✅ Add popup on click
+      map.on('click', 'boat-ramps-layer', (e) => {
+  const coordinates = e.features[0].geometry.coordinates.slice();
+  const title = e.features[0].properties.title;
+
+  const directionsURL = `https://www.google.com/maps/dir/?api=1&origin=Eugene,OR&destination=${coordinates[1]},${coordinates[0]}&travelmode=driving`;
+
+  new mapboxgl.Popup()
+    .setLngLat(coordinates)
+    .setHTML(`
+      <strong>${title}</strong><br/>
+      <a href="${directionsURL}" target="_blank" rel="noopener noreferrer">Get Directions from Eugene</a>
+    `)
+    .addTo(map);
+});
+
+
+      // ✅ Cursor changes
+      map.on('mouseenter', 'boat-ramps-layer', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'boat-ramps-layer', () => {
+        map.getCanvas().style.cursor = '';
+      });
+    });
+
+    // 🎣 User fishing markers
+//    map.on('click', (e) => {
+//      const lng = e.lngLat.lng.toFixed(4);
+//      const lat = e.lngLat.lat.toFixed(4);
+//      const note = prompt(`Enter note for fishing spot at ${lat}, ${lng}:`);
+//      if (note && note.trim() !== '') {
+//        new mapboxgl.Marker({ color: '#1976d2' })
+//          .setLngLat([lng, lat])
+//          .setPopup(new mapboxgl.Popup().setText(`🎣 ${note}`))
+//          .addTo(map)
+//          .togglePopup();
+//      }
+//    });
+  </script>
+</body>
+</html>
+
