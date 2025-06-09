@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fall Creek Fishing Guide</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+    <!-- Load Mapbox GL JS -->
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
+    <!-- Basic page styling -->
+    <style>
+    #page-title {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    margin: 0;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 1; /* ensures it sits on top of the map */
+  }
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+    </style>
+
+
+  </head>
+
+  <body>
+  <h1 id="page-title">Fall Creek Fishing Guide</h1>
+
+    <!-- The map container -->
+    <div id="map"></div>
+
+    <script>
+      // Set your Mapbox access token
+      mapboxgl.accessToken = 'pk.eyJ1IjoiZ2F2aW50eWNlciIsImEiOiJjbTkxdWRoN20wNTc0MnJwdjk2d2RoMjlpIn0.VgcV-NtMeZ5rs0fl12fGtA';
+
+      // Initialize the map
+      const map = new mapboxgl.Map({
+        container: 'map', // ID of the map container div
+        style: 'mapbox://styles/gavintycer/cmbjvcvrq007401sq2jjf81l1', // Your custom style URL
+        center: [-122.7162, 43.9416], // Initial center [lng, lat]
+        zoom: 11.7 // Initial zoom level
+      });
+
+map.addControl(new mapboxgl.NavigationControl());
+// Change cursor to pointer on hover over any interactive feature
+      map.on('load', () => {
+        const interactiveLayers = [
+          'fall-creek-boat-ramps',      // Point layer
+          'fall-creek-polygons',        // Polygon layer
+          'fall-creek-drift-routes'     // Line layer
+        ];
+
+        interactiveLayers.forEach((layer) => {
+          map.on('mouseenter', layer, () => {
+            map.getCanvas().style.cursor = 'pointer';
+          });
+
+          map.on('mouseleave', layer, () => {
+            map.getCanvas().style.cursor = '';
+          });
+        });
+      });
+      /*
+        Add an event listener that runs when a user clicks on the map.
+        This function checks if the user clicked on any features in the specified layers.
+      */
+      map.on('click', (event) => {
+        // Query for features at the clicked point, within these layers:
+        const features = map.queryRenderedFeatures(event.point, {
+          layers: [
+            'fall-creek-boat-ramps',      // Point layer
+            'fall-creek-polygons',        // Polygon layer
+            'fall-creek-drift-routes'     // Line layer
+          ]
+        });
+
+        // If no features were clicked, exit the function
+        if (!features.length) return;
+
+        // Get the first clicked feature
+        const feature = features[0];
+
+        /*
+          Determine the popup location.
+          - For points: use the exact feature coordinates.
+          - For lines/polygons: use the location of the click instead.
+        */
+        let popupLocation;
+        if (feature.geometry.type === 'Point') {
+          popupLocation = feature.geometry.coordinates;
+        } else {
+          popupLocation = event.lngLat;
+        }
+
+        /*
+          Create a popup, set its content from feature properties,
+          and add it to the map.
+        */
+        new mapboxgl.Popup({ offset: [0, -15] }) // offset moves the popup slightly above the point
+          .setLngLat(popupLocation)
+         .setHTML(
+  `<h3>${feature.properties.Title || 'Info'}</h3>
+   <p>${feature.properties.Description || ''}</p>
+   <a href="https://www.google.com/maps/dir/?api=1&destination=${popupLocation[1]},${popupLocation[0]}" target="_blank">
+     Get Directions
+   </a>`
+)
+
+          .addTo(map);
+      });
+    </script>
+  </body>
+</html>
